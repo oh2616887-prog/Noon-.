@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>AI Workspace Pro</title>
+    <style>
+        :root {
+            /* Premium Dark Theme Variables */
+            --bg-main: #000000;
+            --bg-sidebar: #0a0a0c;
+            --bg-card: #16161a;
+            --border-color: #232329;
+            --text-primary: #f5f5f7;
+            --text-secondary: #86868b;
+            --accent-blue: #2997ff;
+            --accent-red: #ff453a;
+            --msg-user: #0071e3;
+            --msg-ai: #1c1c1e;
+            --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        /* Light Mode Variant Variables */
+        body.light-theme {
+            --bg-main: #f5f5f7;
+            --bg-sidebar: #ffffff;
+            --bg-card: #e8e8ed;
+            --border-color: #d2d2d7;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --accent-blue: #0066cc;
+            --accent-red: #d9383a;
+            --msg-user: #0071e3;
+            --msg-ai: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.47059;
+            font-weight: 400;
+            letter-spacing: -.022em;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Sidebar Navigation Layout */
+        aside {
+            width: 280px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 20;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 20px 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .new-chat-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 16px;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .new-chat-btn:active {
+            transform: scale(0.98);
+        }
+
+        .history-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .history-item {
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .history-item:hover, .history-item.active {
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .sidebar-footer {
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .footer-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .footer-btn:hover {
+            background-color: var(--bg-card);
+        }
+
+        .footer-btn.danger {
+            color: var(--accent-red);
+        }
+
+        .footer-btn.danger:hover {
+            background-color: rgba(255, 69, 58, 0.1);
+        }
+
+        /* Main Content Window Framework */
+        .main-window {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+
+        .chat-container.hidden {
+            display: none !important;
+        }
+
+        header {
+            background-color: rgba(var(--bg-main), 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color);
+            padding-top: env(safe-area-inset-top);
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        body.light-theme header {
+            background-color: rgba(245, 245, 247, 0.8);
+        }
+
+        .header-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 24px;
+        }
+
+        .status-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.3rem;
+            cursor: pointer;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #30d158;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #30d158;
+        }
+
+        .status-title {
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+
+        .chat-space {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 32px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .msg {
+            max-width: 75%;
+            padding: 14px 18px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+            opacity: 0;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            animation: slideUp 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        .msg.system {
+            background-color: var(--msg-ai);
+            color: var(--text-primary);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .msg.user {
+            background-color: var(--msg-user);
+            color: #ffffff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .loading-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 4px;
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        /* Input Interaction Tray */
+        .input-tray {
+            background-color: rgba(var(--bg-main), 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-color);
+            padding: 16px 24px calc(16px + env(safe-area-inset-bottom)) 24px;
+            flex-shrink: 0;
+        }
+
+        .input-bar {
+            display: flex;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 26px;
+            padding: 6px 8px 6px 20px;
+            align-items: center;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .main-input {
+            flex-grow: 1;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-family: var(--font-stack);
+            font-size: 1rem;
+            padding: 10px 0;
+            outline: none;
+        }
+
+        .main-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .action-submit {
+            background-color: var(--text-primary);
+            color: var(--bg-main);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .action-submit:active {
+            transform: scale(0.92);
+        }
+
+        /* Overlay Configuration Panels */
+        .settings-view, .auth-view {
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 24px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 30;
+        }
+
+        .settings-view.hidden, .auth-view.hidden {
+            display: none !important;
+        }
+
+        .back-nav-btn {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .back-nav-btn:hover {
+            background: var(--border-color);
+        }
+
+        .back-nav-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .settings-box {
+            width: 100%;
+            max-width: 440px;
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            padding: 32px;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .setup-headline {
+            font-size: 1.6rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .setup-body {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .field-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 700;
+            display: block;
+        }
+
+        .field-input {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            color: var(--text-primary);
+            padding: 16px;
+            font-size: 1rem;
+            width: 100%;
+            outline: none;
+            margin-bottom: 20px;
+            transition: border-color 0.2s;
+        }
+
+        .field-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn {
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .btn:active {
+            transform: scale(0.99);
+        }
+
+        .btn-save {
+            background: var(--accent-blue);
+            color: #ffffff;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-card);
+        }
+
+        .auth-toggle-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 16px;
+            cursor: pointer;
+        }
+
+        .auth-toggle-text span {
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        @media (max-width: 768px) {
+            aside {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                transform: translateX(-100%);
+                box-shadow: 10px 0 30px rgba(0,0,0,0.2);
+            }
+            aside.visible {
+                transform: translateX(0);
+            }
+            .menu-toggle {
+                display: block;
+            }
+            .msg {
+                max-width: 85%;
+            }
+            .back-nav-btn {
+                top: env(safe-area-inset-top, 16px);
+                left: 16px;
+            }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="authPanel" class="auth-view" onclick="closeAuthOnOverlay(event)">
+        <div class="settings-box" onclick="event.stopPropagation()">
+            <h1 class="setup-headline" id="authTitle">Sign In</h1>
+            <p class="setup-body" id="authDesc">Access your sandbox computing terminal workspace.</p>
+            
+            <label class="field-label">Username</label>
+            <input type="text" id="authUsername" class="field-input" placeholder="Enter username">
+            
+            <label class="field-label">Password</label>
+            <input type="password" id="authPassword" class="field-input" placeholder="Enter password">
+            
+            <div class="btn-group">
+                <button class="btn btn-save" id="authSubmitBtn" onclick="handleAuthSubmit()">Log In</button>
+            </div>
+            <p class="auth-toggle-text" id="authToggle" onclick="toggleAuthMode()">Don't have an account? <span>Sign Up</span></p>
+        </div>
+    </div>
+
+    <aside id="sidebar">
+        <div class="sidebar-header">
+            <button class="new-chat-btn" onclick="createNewChat()">
+                New Conversation
+            </button>
+        </div>
+        <div class="history-list" id="historyList">
+            </div>
+        <div class="sidebar-footer">
+            <button class="footer-btn" onclick="toggleTheme()" id="themeToggleBtn">
+                White Place
+            </button>
+            <button class="footer-btn" onclick="openSettings()">
+                Settings Panel
+            </button>
+            <button class="footer-btn danger" onclick="clearAllHistory()">
+                Clear History
+            </button>
+            <button class="footer-btn" style="color: var(--text-secondary);" onclick="handleLogout()">
+                Log Out
+            </button>
+        </div>
+    </aside>
+
+    <div class="main-window">
+        
+        <div id="settingsPanel" class="settings-view hidden" onclick="closeSettingsOnOverlay(event)">
+            <div class="settings-box" onclick="event.stopPropagation()">
+                <button class="back-nav-btn" onclick="closeSettings()" aria-label="Return to chat">
+                    <svg viewBox="0 0 24 24">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                </button>
+                <br><br>
+                <h1 class="setup-headline">API Authentication</h1>
+                <p class="setup-body">Provide your verification credentials. Tokens are kept fully encrypted in local client space storage arrays.</p>
+                
+                <label class="field-label">Mistral Secret Key</label>
+                <input type="password" id="keyField" class="field-input" placeholder="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...">
+                
+                <div class="btn-group">
+                    <button class="btn btn-save" onclick="commitKey()">Save Variables</button>
+                    <button class="btn btn-secondary" style="color: var(--accent-red);" onclick="clearApiKey()">Purge Credentials</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="chatContainer" class="chat-container">
+            <header>
+                <div class="header-wrap">
+                    <div class="status-group">
+                        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                        <div class="status-dot"></div>
+                        <div class="status-title" id="chatTitle">Mistral Node</div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="chat-space" id="chatSpace">
+                </main>
+
+            <footer class="input-tray">
+                <div class="input-bar">
+                    <input type="text" id="chatField" class="main-input" placeholder="Message Mistral..." autocomplete="off" onkeypress="checkEnter(event)">
+                    <button class="action-submit" onclick="dispatchMessage()">↑</button>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        const chatSpace = document.getElementById('chatSpace');
+        const chatField = document.getElementById('chatField');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const chatContainer = document.getElementById('chatContainer');
+        const keyField = document.getElementById('keyField');
+        const historyList = document.getElementById('historyList');
+        const sidebar = document.getElementById('sidebar');
+        const chatTitle = document.getElementById('chatTitle');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        
+        // Auth UI bindings
+        const authPanel = document.getElementById('authPanel');
+        const authTitle = document.getElementById('authTitle');
+        const authDesc = document.getElementById('authDesc');
+        const authUsernameInput = document.getElementById('authUsername');
+        const authPasswordInput = document.getElementById('authPassword');
+        const authSubmitBtn = document.getElementById('authSubmitBtn');
+        const authToggle = document.getElementById('authToggle');
+
+        let isSignUpMode = false;
+        let currentUser = localStorage.getItem('current_user') || null;
+        let token = null;
+        let sessions = [];
+        let activeSessionId = null;
+
+        if (localStorage.getItem('theme_preference') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggleBtn.textContent = 'Dark Place';
+        }
+
+        checkAuthLifecycle();
+
+        function checkAuthLifecycle() {
+            currentUser = localStorage.getItem('current_user');
+            if (!currentUser) {
+                authPanel.classList.remove('hidden');
+                chatContainer.classList.add('hidden');
+                settingsPanel.classList.add('hidden');
+            } else {
+                authPanel.classList.add('hidden');
+                token = localStorage.getItem(`token_${currentUser}`);
+                sessions = JSON.parse(localStorage.getItem(`sessions_${currentUser}`)) || [];
+                activeSessionId = localStorage.getItem(`active_session_${currentUser}`) || null;
+
+                if (!token) {
+                    settingsPanel.classList.remove('hidden');
+                    chatContainer.classList.add('hidden');
+                } else {
+                    settingsPanel.classList.add('hidden');
+                    chatContainer.classList.remove('hidden');
+                    initWorkspace();
+                }
+            }
+        }
+
+        /* Click outside closures */
+        function closeSettingsOnOverlay(e) {
+            closeSettings();
+        }
+
+        function closeAuthOnOverlay(e) {
+            // Only allow closing if logged in
+            if (currentUser) {
+                authPanel.classList.add('hidden');
+                checkAuthLifecycle();
+            }
+        }
+
+        function toggleAuthMode() {
+            isSignUpMode = !isSignUpMode;
+            if (isSignUpMode) {
+                authTitle.textContent = "Sign Up";
+                authDesc.textContent = "Create an absolute isolated system user sandbox profile.";
+                authSubmitBtn.textContent = "Register Profile";
+                authToggle.innerHTML = "Already have an account? <span>Sign In</span>";
+            } else {
+                authTitle.textContent = "Sign In";
+                authDesc.textContent = "Access your sandbox computing terminal workspace.";
+                authSubmitBtn.textContent = "Log In";
+                authToggle.innerHTML = "Don't have an account? <span>Sign Up</span>";
+            }
+        }
+
+        function handleAuthSubmit() {
+            const user = authUsernameInput.value.trim().toLowerCase();
+            const pass = authPasswordInput.value.trim();
+
+            if (!user || !pass) {
+                alert("Credentials processing arrays cannot contain null fields.");
+                return;
+            }
+
+            let usersDB = JSON.parse(localStorage.getItem('users_database')) || {};
+
+            if (isSignUpMode) {
+                if (usersDB[user]) {
+                    alert("Profile identity key allocation overlap. Choose another username.");
+                    return;
+                }
+                usersDB[user] = pass;
+                localStorage.setItem('users_database', JSON.stringify(usersDB));
+                alert("Account registration finalized successfully.");
+                isSignUpMode = false;
+                toggleAuthMode();
+            } else {
+                if (!usersDB[user] || usersDB[user] !== pass) {
+                    alert("Authorization identity signature denied.");
+                    return;
+                }
+                localStorage.setItem('current_user', user);
+                authUsernameInput.value = '';
+                authPasswordInput.value = '';
+                checkAuthLifecycle();
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('current_user');
+            currentUser = null;
+            token = null;
+            sessions = [];
+            activeSessionId = null;
+            checkAuthLifecycle();
+        }
+
+        function initWorkspace() {
+            renderHistoryList();
+            if (activeSessionId && sessions.find(s => s.id === activeSessionId)) {
+                loadSession(activeSessionId);
+            } else if (sessions.length > 0) {
+                loadSession(sessions[0].id);
+            } else {
+                createNewChat();
+            }
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            const isLight = document.body.classList.contains('light-theme');
+            localStorage.setItem('theme_preference', isLight ? 'light' : 'dark');
+            themeToggleBtn.textContent = isLight ? 'Dark Place' : 'White Place';
+        }
+
+        function createNewChat() {
+            const newId = 'session_' + Date.now();
+            const newSession = {
+                id: newId,
+                title: "New Conversation",
+                messages: [{ role: 'system', content: "Console initialization complete. Standing by for prompt instructions." }]
+            };
+            sessions.unshift(newSession);
+            saveDataState();
+            activeSessionId = newId;
+            localStorage.setItem(`active_session_${currentUser}`, newId);
+            
+            renderHistoryList();
+            loadSession(newId);
+        }
+
+        function loadSession(id) {
+            activeSessionId = id;
+            localStorage.setItem(`active_session_${currentUser}`, id);
+            const active = sessions.find(s => s.id === id);
+            
+            chatSpace.innerHTML = '';
+            chatTitle.textContent = active ? active.title : "Mistral Node";
+
+            if (active) {
+                active.messages.forEach(m => {
+                    renderMessageElement(m.content, m.role);
+                });
+            }
+
+            document.querySelectorAll('.history-item').forEach(el => {
+                el.classList.toggle('active', el.dataset.id === id);
+            });
+            
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('visible');
+            }
+        }
+
+        function renderHistoryList() {
+            historyList.innerHTML = '';
+            sessions.forEach(s => {
+                const item = document.createElement('div');
+                item.classList.add('history-item');
+                if (s.id === activeSessionId) item.classList.add('active');
+                item.dataset.id = s.id;
+                item.textContent = s.title;
+                item.onclick = () => {
+                    if (settingsPanel.classList.contains('hidden')) {
+                        loadSession(s.id);
+                    }
+                };
+                historyList.appendChild(item);
+            });
+        }
+
+        function clearAllHistory() {
+            if (confirm("Are you sure you want to delete all conversations? This cannot be undone.")) {
+                sessions = [];
+                localStorage.removeItem(`sessions_${currentUser}`);
+                localStorage.removeItem(`active_session_${currentUser}`);
+                activeSessionId = null;
+                chatSpace.innerHTML = '';
+                renderHistoryList();
+                createNewChat();
+            }
+        }
+
+        function saveDataState() {
+            if (currentUser) {
+                localStorage.setItem(`sessions_${currentUser}`, JSON.stringify(sessions));
+            }
+        }
+
+        function commitKey() {
+            const inputVal = keyField.value.trim();
+            if (inputVal) {
+                localStorage.setItem(`token_${currentUser}`, inputVal);
+                token = inputVal;
+                settingsPanel.classList.add('hidden');
+                chatContainer.classList.remove('hidden');
+                initWorkspace();
+            }
+        }
+
+        function clearApiKey() {
+            localStorage.removeItem(`token_${currentUser}`);
+            token = null;
+            keyField.value = '';
+            alert('Saved API key variables erased from runtime environments.');
+            checkAuthLifecycle();
+        }
+
+        function openSettings() {
+            if (token) keyField.value = token;
+            chatContainer.classList.add('hidden');
+            settingsPanel.classList.remove('hidden');
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('visible');
+            }
+        }
+
+        function closeSettings() {
+            if (!token) {
+                alert('Please register an active system verification token.');
+                return;
+            }
+            settingsPanel.classList.add('hidden');
+            chatContainer.classList.remove('hidden');
+        }
+
+        if (window.innerWidth <= 768) {
+            sidebar.classList.remove('visible');
+        }
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('visible');
+        }
+
+        function checkEnter(e) {
+            if (e.key === 'Enter') dispatchMessage();
+        }
+
+        function renderMessageElement(content, role) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('msg', role);
+            bubble.textContent = content;
+            chatSpace.appendChild(bubble);
+            chatSpace.scrollTop = chatSpace.scrollHeight;
+        }
+
+        function renderIndicator() {
+            const bubble = document.createElement('div');
+            bubble.classList.add('msg', 'system');
+            bubble.id = 'loadingIndicator';
+            bubble.innerHTML = `
+                <div class="loading-container">
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+            `;
+            chatSpace.appendChild(bubble);
+            chatSpace.scrollTop = chatSpace.scrollHeight;
+        }
+
+        function removeIndicator() {
+            const indicator = document.getElementById('loadingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        async function dispatchMessage() {
+            const prompt = chatField.value.trim();
+            if (!prompt) return;
+
+            if (!token) {
+                openSettings();
+                return;
+            }
+
+            const currentSession = sessions.find(s => s.id === activeSessionId);
+            if (!currentSession) return;
+            
+            if (currentSession.title === "New Conversation") {
+                currentSession.title = prompt.substring(0, 20) + (prompt.length > 20 ? '...' : '');
+                renderHistoryList();
+            }
+
+            currentSession.messages.push({ role: 'user', content: prompt });
+            renderMessageElement(prompt, 'user');
+            chatField.value = '';
+            saveDataState();
+
+            renderIndicator();
+
+            try {
+                const historyPayload = currentSession.messages.map(m => ({
+                    role: m.role === 'system' ? 'user' : m.role, 
+                    content: m.content
+                }));
+
+                const endpoint = await fetch('https://api.mistral.ai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authorization': `Bearer ${token.trim()}`
+                    },
+                    body: JSON.stringify({
+                        model: 'mistral-large-latest', 
+                        messages: historyPayload
+                    })
+                });
+
+                const payload = await endpoint.json();
+                removeIndicator();
+
+                if (endpoint.ok) {
+                    const resultText = payload.choices[0].message.content;
+                    currentSession.messages.push({ role: 'system', content: resultText });
+                    renderMessageElement(resultText, 'system');
+                    saveDataState();
+                } else {
+                    renderMessageElement(`Mistral Error: ${payload.message || 'Key reject verification error.'}`, 'system');
+                }
+            } catch (err) {
+                removeIndicator();
+                renderMessageElement('Network pipeline transmission error.', 'system');
+            }
+        }
+    </script>
+</body>
+</html>
